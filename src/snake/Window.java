@@ -1,12 +1,6 @@
 /*
 * TODO
-* Add Snake title to main menu
 * Save separate high score for each difficulty/size combination
-* Show score and highscore when game is over
-* When game is over, don't reset window location
-* 
-* To change this template, choose Tools | Templates
- * and open the template in the editor.
  */
 package snake;
 
@@ -26,10 +20,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.Timer;
 
 /**
  *
@@ -51,8 +48,13 @@ public class Window extends JFrame {
 	private JPanel menuPanel = null;
 	private JPanel gamePanel = null;
 
+	private final Point initLoc;
+
 	public Window() {
+		gameStarted = false;
+
 		setVisible(true);
+		initLoc = getLocation();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setResizable(false);
 		pack();
@@ -61,12 +63,13 @@ public class Window extends JFrame {
 	}
 
 	public void displayMenu() {
-		gameStarted = false;
-
 		menuPanel = new JPanel();
 		menuPanel.setPreferredSize(new Dimension(Window.WINDOW_DIMENSION, Window.WINDOW_DIMENSION));
 		menuPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 1000, 10));
 
+		JLabel titleLabel = new JLabel("Snake");
+		titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.PLAIN, 60));
+		
 		newGameBtn.setPreferredSize(new Dimension(100, 100));
 		newGameBtn.addActionListener(new ActionListener() {
 			@Override
@@ -104,6 +107,7 @@ public class Window extends JFrame {
 		difficultyButton.setPreferredSize(new Dimension(200, 50));
 		windowSizeBtn.setPreferredSize(new Dimension(200, 50));
 
+		menuPanel.add(titleLabel);
 		menuPanel.add(newGameBtn);
 		menuPanel.add(difficultyButton);
 		menuPanel.add(windowSizeBtn);
@@ -116,15 +120,15 @@ public class Window extends JFrame {
 		if (getContentPane().getWidth() > WINDOW_DIMENSION) {
 			pack();
 		}
-		
-		setLocationRelativeTo(null);
+
+		if (initLoc.equals(getLocation())) {
+			setLocationRelativeTo(null);
+		}
 
 		while (!gameStarted)
 			;
 
-		if (gameStarted) {
-			initGame();
-		}
+		initGame();
 
 		menuPanel.setVisible(false);
 	}
@@ -191,9 +195,15 @@ public class Window extends JFrame {
 			@Override
 			public void paintComponent(Graphics g) {
 				super.paintComponent(g);
+				
 				for (Point point : sf.getSnake()) {
-					g.setColor(Color.BLACK);
-					g.fillRect(point.x, point.y, Snake.SIZE, Snake.SIZE);
+					if (gameStarted) {
+						g.setColor(Color.BLACK);
+						g.fillRect(point.x, point.y, Snake.SIZE, Snake.SIZE);
+					} else {
+						g.setColor(Color.RED);
+						g.fillRect(point.x, point.y, Snake.SIZE, Snake.SIZE);
+					}
 				}
 				g.setColor(Color.RED);
 				g.fillRect(Collectible.X, Collectible.Y, Snake.SIZE, Snake.SIZE);
@@ -202,8 +212,10 @@ public class Window extends JFrame {
 				FontMetrics fontMetrics = g.getFontMetrics();
 				String count = Integer.toString(Collectible.COLLECTED_COUNTER);
 				String hscount = Integer.toString(highscore);
-				g.drawString("Score: " + count, Window.WINDOW_DIMENSION - fontMetrics.stringWidth("Score: " + count) - 5, 20);
-				g.drawString("High Score: " + hscount, Window.WINDOW_DIMENSION - fontMetrics.stringWidth("High Score: " + hscount) - 5, 40);
+				g.drawString("Score: " + count,
+						Window.WINDOW_DIMENSION - fontMetrics.stringWidth("Score: " + count) - 5, 20);
+				g.drawString("High Score: " + hscount,
+						Window.WINDOW_DIMENSION - fontMetrics.stringWidth("High Score: " + hscount) - 5, 40);
 			}
 		};
 		gamePanel.setPreferredSize(new Dimension(Window.WINDOW_DIMENSION, Window.WINDOW_DIMENSION));
@@ -248,6 +260,13 @@ public class Window extends JFrame {
 	}
 
 	public void reset() {
+		gameStarted = false;
+
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e1) {
+		}
+
 		sf.resetSnake();
 
 		if (highscore == Collectible.COLLECTED_COUNTER) {
