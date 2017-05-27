@@ -1,9 +1,3 @@
-/*
-* TODO
-* Save separate high score for each difficulty/size combination
-* Show highscore for current difficulty on main menu
-* Button that shows highscore table for current difficulty
- */
 package snake;
 
 import java.awt.Color;
@@ -27,10 +21,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-/**
- *
- * @author Benjamin
- */
 public class Window extends JFrame {
 
 	private static final long serialVersionUID = 1L;
@@ -60,7 +50,6 @@ public class Window extends JFrame {
 
 		font = new Font("TimesRoman", Font.PLAIN, 20);
 
-		setVisible(true);
 		initLoc = getLocation();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setResizable(false);
@@ -69,8 +58,64 @@ public class Window extends JFrame {
 		displayMenu();
 	}
 
+	public void loadHighScore(){
+		Scanner file = null;
+		try {
+			file = new Scanner(new File("snake.config"));
+			file.next();
+			easyHighscore = file.nextInt();
+			file.next();
+			normalHighscore = file.nextInt();
+			file.next();
+			hardHighscore = file.nextInt();
+			file.next();
+			veryHardHighscore = file.nextInt();
+		} catch (Exception e) {
+			easyHighscore = 0;
+			normalHighscore = 0;
+			hardHighscore = 0;
+			veryHardHighscore = 0;
+		} finally {
+			if (file != null)
+				file.close();
+		}
+	}
+	
+	public int getHighScoreForCurrentDifficulty(){
+		if (currentDifficulty == 0) {
+			return easyHighscore;
+		} else if (currentDifficulty == 1) {
+			return normalHighscore;
+		} else if (currentDifficulty == 2) {
+			return hardHighscore;
+		} else {
+			return veryHardHighscore;
+		}
+	}
+	
 	public void displayMenu() {
-		menuPanel = new JPanel();
+		loadHighScore();
+		
+		menuPanel = new JPanel(){
+			private static final long serialVersionUID = 1L;
+			
+			@Override
+			public void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				
+				if (!g.getFont().equals(font)) {
+					g.setFont(font);
+				}
+				
+				g.setColor(Color.RED);
+				FontMetrics fontMetrics = g.getFontMetrics();
+
+				int hscount = getHighScoreForCurrentDifficulty();
+				
+				g.drawString("High Score: " + hscount,
+						Window.WINDOW_DIMENSION - fontMetrics.stringWidth("High Score: " + hscount) - 5, 20);
+			}
+		};
 		menuPanel.setPreferredSize(new Dimension(Window.WINDOW_DIMENSION, Window.WINDOW_DIMENSION));
 		menuPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 1000, 10));
 
@@ -93,6 +138,8 @@ public class Window extends JFrame {
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
 					difficultyButton.setText(setSpeed());
+					loadHighScore();
+					menuPanel.repaint();
 				}
 			});
 		}
@@ -106,7 +153,6 @@ public class Window extends JFrame {
 					windowSizeBtn.setText(setGameWindowSize());
 					menuPanel.setPreferredSize(new Dimension(WINDOW_DIMENSION, WINDOW_DIMENSION));
 					pack();
-					setLocationRelativeTo(null);
 				}
 			});
 		}
@@ -132,6 +178,8 @@ public class Window extends JFrame {
 		if (initLoc.equals(getLocation())) {
 			setLocationRelativeTo(null);
 		}
+		
+		setVisible(true);
 
 		while (!gameStarted)
 			;
@@ -185,37 +233,12 @@ public class Window extends JFrame {
 
 		Collectible.randomizeLocation(getContentPane().getWidth(), getContentPane().getHeight(), sf);
 
-		Scanner file = null;
-		try {
-			file = new Scanner(new File("snake.config"));
-			file.next();
-			easyHighscore = file.nextInt();
-			file.next();
-			normalHighscore = file.nextInt();
-			file.next();
-			hardHighscore = file.nextInt();
-			file.next();
-			veryHardHighscore = file.nextInt();
-		} catch (Exception e) {
-			easyHighscore = 0;
-			normalHighscore = 0;
-			hardHighscore = 0;
-			veryHardHighscore = 0;
-		} finally {
-			if (file != null)
-				file.close();
-		}
-
 		gamePanel = new JPanel() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public void paintComponent(Graphics g) {
 				super.paintComponent(g);
-
-				if (!g.getFont().equals(font)) {
-					g.setFont(font);
-				}
 
 				for (Point point : sf.getSnake()) {
 					if (gameStarted) {
@@ -228,20 +251,15 @@ public class Window extends JFrame {
 				}
 				g.setColor(Color.RED);
 				g.fillRect(Collectible.X, Collectible.Y, Snake.SIZE, Snake.SIZE);
+				
+				if (!g.getFont().equals(font)) {
+					g.setFont(font);
+				}
 
 				FontMetrics fontMetrics = g.getFontMetrics();
 				String count = Integer.toString(Collectible.COLLECTED_COUNTER);
 
-				String hscount;
-				if (currentDifficulty == 0) {
-					hscount = Integer.toString(easyHighscore);
-				} else if (currentDifficulty == 1) {
-					hscount = Integer.toString(normalHighscore);
-				} else if (currentDifficulty == 2) {
-					hscount = Integer.toString(hardHighscore);
-				} else {
-					hscount = Integer.toString(veryHardHighscore);
-				}
+				int hscount = getHighScoreForCurrentDifficulty();
 
 				g.drawString("Score: " + count,
 						Window.WINDOW_DIMENSION - fontMetrics.stringWidth("Score: " + count) - 5, 20);
